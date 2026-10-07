@@ -1,4 +1,4 @@
-//! Domain concepts shared by every NotebookOS platform.
+//! Domain concepts shared by every `NotebookOS` platform.
 
 use std::fmt;
 
@@ -116,9 +116,10 @@ impl Page {
         kind: PageKind,
         paper_style: Option<PaperStyle>,
     ) -> Self {
+        let title = title.into();
         Self {
             id,
-            title: normalized_title(title.into()),
+            title: normalized_title(&title),
             kind,
             paper_style,
         }
@@ -145,9 +146,15 @@ impl Page {
     }
 
     pub fn rename(&mut self, title: impl Into<String>) {
-        self.title = normalized_title(title.into());
+        let title = title.into();
+        self.title = normalized_title(&title);
     }
 
+    /// Changes the paper rendered beneath a handwritten page.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PageTypeError`] when this page is not handwritten.
     pub fn set_paper_style(&mut self, paper_style: PaperStyle) -> Result<(), PageTypeError> {
         if self.kind != PageKind::Handwritten {
             return Err(PageTypeError);
@@ -158,7 +165,7 @@ impl Page {
     }
 }
 
-fn normalized_title(title: String) -> String {
+fn normalized_title(title: &str) -> String {
     let title = title.trim();
     if title.is_empty() {
         "Untitled".to_owned()
