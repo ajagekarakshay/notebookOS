@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NotebookOS interface concept</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --canvas: #e8e8e4;
+      --surface: #fbfbf9;
+      --surface-raised: #ffffff;
+      --sidebar: #f2f2ee;
+      --muted: #ededE8;
+      --muted-2: #e4e4de;
+      --text: #242622;
+      --text-soft: #696d66;
+      --text-faint: #96998f;
+      --border: #d9dad3;
+      --border-strong: #c8cac1;
+      --primary: #355c52;
+      --primary-soft: #dce9e4;
+      --primary-text: #24483f;
+      --warning: #93652d;
+      --warning-soft: #f4ead9;
+      --danger: #a04646;
+      --shadow: 0 20px 60px rgba(33, 37, 32, .17), 0 2px 8px rgba(33, 37, 32, .08);
+      --popover-shadow: 0 18px 48px rgba(30, 34, 29, .18), 0 2px 10px rgba(30, 34, 29, .1);
+      --radius-sm: 7px;
+      --radius-md: 11px;
+      --radius-lg: 16px;
+      --radius-xl: 23px;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+      --font-reading: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --canvas: #161815;
+      --surface: #21231f;
+      --surface-raised: #292c27;
+      --sidebar: #1b1d1a;
+      --muted: #30332e;
+      --muted-2: #3a3d37;
+      --text: #eff1eb;
+      --text-soft: #b2b6ab;
+      --text-faint: #80857a;
+      --border: #3b3e38;
+      --border-strong: #4a4e46;
+      --primary: #9ac9ba;
+      --primary-soft: #29463e;
+      --primary-text: #c6e8dc;
+      --warning: #ddb87a;
+      --warning-soft: #4a3c28;
+      --danger: #e19b9b;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .45), 0 2px 10px rgba(0, 0, 0, .35);
+      --popover-shadow: 0 20px 52px rgba(0, 0, 0, .48), 0 2px 12px rgba(0, 0, 0, .4);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% -10%, color-mix(in srgb, var(--primary) 15%, transparent), transparent 34rem),
+        var(--canvas);
+      color: var(--text);
+      font: 14px/1.45 var(--font-ui);
+      overflow-x: hidden;
+    }
+
+    button, input { font: inherit; }
+
+    button {
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:focus-visible, [tabindex]:focus-visible, input:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--primary) 50%, transparent);
+      outline-offset: 2px;
+    }
+
+    .icon {
+      width: 17px;
+      height: 17px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
+    }
+
+    .prototype-bar {
+      min-height: 54px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--text-soft);
+    }
+
+    .prototype-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .prototype-title strong { color: var(--text); font-weight: 650; }
+    .prototype-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .prototype-actions { display: flex; align-items: center; gap: 8px; }
+
+    .segmented {
+      display: flex;
+      align-items: center;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--surface) 84%, transparent);
+    }
+
+    .segmented button {
+      border: 0;
+      border-radius: 7px;
+      padding: 5px 10px;
+      background: transparent;
+      color: var(--text-soft);
+      cursor: default;
+    }
+
+    .segmented button[aria-pressed="true"] {
+      background: var(--surface-raised);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(25, 27, 24, .12);
+    }
+
+    .icon-button, .quiet-button, .default-button {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: default;
+    }
+
+    .icon-button { width: 30px; padding: 0; color: var(--text-soft); }
+    .icon-button:hover, .quiet-button:hover { background: var(--muted); color: var(--text); }
+    .quiet-button { padding: 5px 9px; color: var(--text-soft); }
+    .default-button { padding: 5px 11px; border-color: var(--border); background: var(--surface-raised); }
+    .default-button:hover { border-color: var(--border-strong); background: var(--muted); }
+
+    .app-frame {
+      width: min(1500px, calc(100vw - 32px));
+      height: min(920px, calc(100vh - 76px));
+      min-height: 680px;
+      margin: 0 auto 22px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: width .28s ease, height .28s ease, border-radius .28s ease;
+      position: relative;
+    }
+
+    body[data-device="tablet"] .app-frame { width: min(1040px, calc(100vw - 32px)); height: min(840px, calc(100vh - 76px)); }
+    body[data-device="phone"] .app-frame { width: min(430px, calc(100vw - 24px)); height: min(850px, calc(100vh - 76px)); min-height: 650px; border-radius: 30px; }
+
+    .window-titlebar {
+      height: 45px;
+      display: grid;
+      grid-template-columns: 260px 1fr auto;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: var(--sidebar);
+      user-select: none;
+    }
+
+    .traffic-lights { display: flex; align-items: center; gap: 8px; padding-left: 16px; }
+    .traffic-lights i { width: 12px; height: 12px; border-radius: 50%; background: var(--muted-2); border: 1px solid color-mix(in srgb, var(--text-faint) 40%, transparent); }
+    .window-title { text-align: center; color: var(--text-soft); font-size: 12px; letter-spacing: .01em; }
+    .window-actions { padding-right: 10px; display: flex; align-items: center; gap: 3px; }
+
+    .app-layout {
+      height: calc(100% - 45px);
+      display: grid;
+      grid-template-columns: 68px 250px minmax(0, 1fr);
+      min-width: 0;
+    }
+
+    .global-rail {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 0;
+      padding: 12px 8px 10px;
+      gap: 5px;
+    }
+
+    .workspace-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 10px;
+      border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+      color: var(--primary-text);
+      background: var(--primary-soft);
+      font-weight: 700;
+      letter-spacing: -.03em;
+    }
+
+    .rail-button {
+      width: 50px;
+      min-height: 48px;
+      padding: 6px 3px 4px;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+      color: var(--text-soft);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 10px;
+      cursor: default;
+    }
+
+    .rail-button .icon { width: 19px; height: 19px; }
+    .rail-button:hover { background: var(--muted); color: var(--text); }
+    .rail-button[aria-selected="true"] { color: var(--primary-text); background: var(--primary-soft); font-weight: 630; }
+    .rail-spacer { flex: 1; }
+
+    .context-pane {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+    }
+
+    .context-header { padding: 14px 14px 10px; }
+
+    .workspace-switcher {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 36px;
+      padding: 5px 6px;
+      border-radius: 9px;
+      text-align: left;
+      cursor: default;
+    }
+
+    .workspace-switcher:hover { background: var(--muted); }
+    .workspace-dot { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; color: var(--primary-text); background: var(--primary-soft); font-size: 11px; font-weight: 700; }
+    .workspace-switcher strong { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
+
+    .pane-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 15px;
+      padding: 0 6px;
+    }
+
+    .pane-heading h2 { margin: 0; font-size: 18px; line-height: 1.2; letter-spacing: -.02em; }
+
+    .context-search {
+      position: relative;
+      margin-top: 12px;
+    }
+
+    .context-search .icon { position: absolute; left: 9px; top: 8px; width: 15px; height: 15px; color: var(--text-faint); }
+    .context-search input { width: 100%; height: 32px; padding: 5px 8px 5px 31px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); outline: none; }
+    .context-search input::placeholder { color: var(--text-faint); }
+
+    .context-content { flex: 1; overflow: auto; min-height: 0; padding: 0 8px 14px; }
+    .context-set { display: none; }
+    .context-set.active { display: block; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 12px 7px 4px;
+      color: var(--text-faint);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+
+    .tree-row, .list-row {
+      width: 100%;
+      min-height: 32px;
+      padding: 5px 8px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-soft);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      text-align: left;
+      cursor: default;
+      position: relative;
+    }
+
+    .tree-row:hover, .list-row:hover { background: var(--muted); color: var(--text); }
+    .tree-row.selected, .list-row.selected { background: var(--muted-2); color: var(--text); }
+    .tree-row .icon, .list-row .icon { width: 15px; height: 15px; }
+    .tree-row span, .list-row span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tree-row small, .list-row small { margin-left: auto; color: var(--text-faint); font-size: 11px; }
+    .tree-row.indent-1 { padding-left: 24px; }
+    .tree-row.indent-2 { padding-left: 42px; }
+
+    .meeting-row { align-items: flex-start; min-height: 54px; padding: 8px; }
+    .meeting-date { width: 34px; flex: 0 0 34px; color: var(--text-faint); font-size: 11px; padding-top: 2px; }
+    .meeting-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .meeting-copy strong { font-size: 13px; font-weight: 620; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meeting-copy span { font-size: 11px; color: var(--text-faint); }
+
+    .main-region { min-width: 0; min-height: 0; position: relative; background: var(--surface); }
+    .view { display: none; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+    .view.active { display: flex; flex-direction: column; }
+
+    .content-toolbar {
+      height: 47px;
+      flex: 0 0 47px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
+      background: color-mix(in srgb, var(--surface) 95%, transparent);
+    }
+
+    .breadcrumb { min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--text-soft); }
+    .breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .breadcrumb .current { color: var(--text); }
+    .toolbar-spacer { flex: 1; }
+    .sync-state { display: inline-flex; align-items: center; gap: 6px; color: var(--text-faint); font-size: 12px; white-space: nowrap; }
+    .sync-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+
+    .editor-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 220px; }
+    .document-scroll { min-width: 0; min-height: 0; overflow: auto; }
+
+    .document {
+      width: min(760px, calc(100% - 72px));
+      margin: 0 auto;
+      padding: 48px 0 110px;
+      font-family: var(--font-reading);
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .document h1 { font: 680 36px/1.12 var(--font-ui); letter-spacing: -.04em; margin: 0 0 12px; }
+    .doc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--text-faint); font: 12px/1.4 var(--font-ui); margin-bottom: 34px; }
+    .doc-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .doc-meta .icon { width: 14px; height: 14px; }
+    .document h2 { font: 670 23px/1.25 var(--font-ui); letter-spacing: -.025em; margin: 34px 0 12px; }
+    .document p { margin: 0 0 17px; }
+    .document a { color: var(--primary-text); text-decoration-color: color-mix(in srgb, var(--primary) 45%, transparent); text-underline-offset: 3px; }
+
+    .doc-callout {
+      margin: 24px 0;
+      padding: 14px 16px;
+      border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+      border-radius: var(--radius-md);
+      background: var(--primary-soft);
+      color: var(--primary-text);
+      font: 14px/1.55 var(--font-ui);
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 10px;
+    }
+
+    .doc-callout .icon { margin-top: 2px; }
+
+    .research-figure {
+      margin: 26px 0 8px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-raised);
+      font-family: var(--font-ui);
+    }
+
+    .research-figure svg { width: 100%; height: auto; display: block; }
+    .figure-caption { margin-top: 10px; color: var(--text-faint); font-size: 12px; line-height: 1.45; }
+
+    .ink-block {
+      min-height: 185px;
+      margin: 26px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background-color: var(--surface-raised);
+      background-image: radial-gradient(var(--border) .8px, transparent .8px);
+      background-size: 17px 17px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ink-toolbar { position: absolute; left: 12px; top: 12px; display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in srgb, var(--surface-raised) 92%, transparent); box-shadow: 0 2px 8px rgba(35, 38, 33, .07); font-family: var(--font-ui); }
+    .ink-tool { width: 27px; height: 27px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--text-soft); }
+    .ink-tool.selected { background: var(--primary-soft); color: var(--primary-text); }
+    .ink-tool .icon { width: 15px; height: 15px; }
+    .ink-block > svg { position: absolute; inset: 48px 20px 12px; width: calc(100% - 40px); height: calc(100% - 60px); }
+
+    .backlinks { margin-top: 42px; border-top: 1px solid var(--border); padding-top: 18px; font-family: var(--font-ui); }
+    .backlinks h3 { font-size: 13px; margin: 0 0 8px; }
+    .backlink-row { padding: 8px 0; color: var(--text-soft); font-size: 13px; display: flex; gap: 8px; }
+    .backlink-row .icon { width: 15px; height: 15px; margin-top: 2px; }
+
+    .outline-pane { border-left: 1px solid var(--border); padding: 18px 14px; overflow: auto; background: color-mix(in srgb, var(--surface) 97%, var(--sidebar)); }
+    .outline-pane h3 { margin: 0 0 11px 6px; font-size: 12px; color: var(--text-faint); font-weight: 650; text-transform: uppercase; letter-spacing: .055em; }
+    .outline-link { width: 100%; border: 0; background: transparent; text-align: left; border-radius: 7px; padding: 6px; color: var(--text-soft); font-size: 12px; }
+    .outline-link:hover, .outline-link.current { background: var(--muted); color: var(--text); }
+    .property-list { margin-top: 24px; }
+    .property { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 6px; font-size: 12px; }
+    .property dt { color: var(--text-faint); }
+    .property dd { margin: 0; color: var(--text-soft); }
+
+    .page-scroll { min-height: 0; overflow: auto; flex: 1; padding: 30px 34px 70px; }
+    .page-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 25px; }
+    .page-title-row h1 { margin: 0 0 4px; font-size: 28px; line-height: 1.2; letter-spacing: -.035em; }
+    .page-title-row p { margin: 0; color: var(--text-soft); }
+
+    .home-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(250px, .8fr); gap: 28px; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .section-heading h2 { margin: 0; font-size: 15px; }
+    .section-heading button { border: 0; background: transparent; color: var(--text-soft); font-size: 12px; }
+
+    .resume-list { border-top: 1px solid var(--border); }
+    .resume-row { min-height: 68px; padding: 12px 4px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+    .resume-icon { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; color: var(--primary-text); background: var(--primary-soft); }
+    .resume-copy { min-width: 0; }
+    .resume-copy strong { display: block; font-weight: 630; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .resume-copy span { color: var(--text-faint); font-size: 12px; }
+    .resume-row time { color: var(--text-faint); font-size: 11px; }
+
+    .capture-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 22px 0 30px; }
+    .capture-button { min-height: 62px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); color: var(--text-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+    .capture-button:hover { border-color: var(--border-strong); color: var(--text); background: var(--muted); }
+
+    .agenda-list { display: flex; flex-direction: column; gap: 8px; }
+    .agenda-card { padding: 12px 13px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); display: grid; grid-template-columns: 44px 1fr; gap: 11px; }
+    .agenda-time { color: var(--text-faint); font-size: 11px; padding-top: 2px; }
+    .agenda-card strong { display: block; font-size: 13px; font-weight: 630; }
+    .agenda-card span { color: var(--text-faint); font-size: 11px; }
+
+    .board-scroll { flex: 1; min-height: 0; overflow: auto; padding: 22px 24px 46px; }
+    .board-columns { display: flex; align-items: flex-start; gap: 14px; min-width: max-content; }
+    .board-column { width: 278px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--sidebar) 72%, var(--surface)); padding: 10px; }
+    .board-column.drag-over { border-color: var(--primary); background: var(--primary-soft); }
+    .column-header { min-height: 32px; padding: 2px 3px 8px; display: flex; align-items: center; gap: 7px; }
+    .column-header strong { font-size: 13px; font-weight: 650; }
+    .column-header .count { color: var(--text-faint); font-size: 11px; }
+    .column-header button { margin-left: auto; }
+    .card-stack { display: flex; flex-direction: column; gap: 8px; min-height: 30px; }
+    .kanban-card { padding: 11px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-raised); box-shadow: 0 1px 2px rgba(25, 28, 24, .04); cursor: grab; }
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging { opacity: .48; }
+    .card-source { display: flex; align-items: center; gap: 5px; color: var(--text-faint); font-size: 10px; margin-bottom: 6px; }
+    .card-source .icon { width: 12px; height: 12px; }
+    .kanban-card h3 { font-size: 13px; line-height: 1.4; margin: 0 0 8px; font-weight: 620; }
+    .card-labels { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }
+    .card-label { color: var(--text-soft); background: var(--muted); border-radius: 5px; padding: 2px 6px; font-size: 10px; }
+    .card-label.research { color: var(--primary-text); background: var(--primary-soft); }
+    .card-meta { display: flex; align-items: center; gap: 10px; color: var(--text-faint); font-size: 10px; }
+    .card-meta span { display: flex; align-items: center; gap: 3px; }
+    .card-meta .icon { width: 12px; height: 12px; }
+    .add-card { width: 100%; margin-top: 8px; border: 0; border-radius: 7px; background: transparent; color: var(--text-faint); min-height: 30px; text-align: left; padding: 5px 8px; }
+    .add-card:hover { background: var(--muted); color: var(--text); }
+
+    .calendar-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .calendar-header { display: grid; grid-template-columns: 58px repeat(5, minmax(100px, 1fr)); flex: 0 0 auto; border-bottom: 1px solid var(--border); }
+    .day-heading { min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--border); color: var(--text-soft); font-size: 11px; }
+    .day-heading strong { color: var(--text); font-size: 17px; font-weight: 620; }
+    .day-heading.today strong { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--surface); background: var(--primary); }
+    .calendar-grid { position: relative; flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: 58px repeat(5, minmax(100px, 1fr)); grid-template-rows: repeat(10, 60px); background: repeating-linear-gradient(to bottom, transparent 0, transparent 59px, var(--border) 60px); }
+    .time-cell { color: var(--text-faint); font-size: 10px; text-align: right; padding: 4px 8px 0 0; }
+    .day-column { grid-row: 1 / -1; border-left: 1px solid var(--border); pointer-events: none; }
+    .calendar-event { z-index: 2; margin: 3px 5px; padding: 6px 7px; border-radius: 7px; border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border)); background: var(--primary-soft); color: var(--primary-text); overflow: hidden; font-size: 10px; line-height: 1.3; }
+    .calendar-event strong { display: block; font-size: 11px; font-weight: 650; }
+    .calendar-event.warning { border-color: color-mix(in srgb, var(--warning) 28%, var(--border)); background: var(--warning-soft); color: var(--warning); }
+
+    .meeting-layout { flex: 1; min-height: 0; overflow: auto; }
+    .meeting-document { width: min(840px, calc(100% - 64px)); margin: 0 auto; padding: 42px 0 100px; }
+    .meeting-kicker { color: var(--primary-text); font-size: 12px; font-weight: 650; margin-bottom: 8px; }
+    .meeting-document h1 { font-size: 30px; line-height: 1.15; letter-spacing: -.035em; margin: 0 0 12px; }
+    .meeting-summary { color: var(--text-soft); font-size: 15px; max-width: 720px; }
+    .attendees { display: flex; align-items: center; margin: 20px 0 30px; }
+    .avatar { width: 28px; height: 28px; border: 2px solid var(--surface); border-radius: 50%; display: grid; place-items: center; background: var(--muted-2); color: var(--text-soft); font-size: 10px; margin-left: -5px; }
+    .avatar:first-child { margin-left: 0; }
+    .meeting-section { padding: 21px 0; border-top: 1px solid var(--border); }
+    .meeting-section h2 { font-size: 15px; margin: 0 0 12px; }
+    .decision { display: grid; grid-template-columns: 20px 1fr; gap: 8px; margin: 9px 0; color: var(--text-soft); }
+    .decision .icon { width: 16px; height: 16px; color: var(--primary); margin-top: 2px; }
+    .action-item { display: grid; grid-template-columns: 19px minmax(0, 1fr) auto; gap: 9px; align-items: start; padding: 8px 0; }
+    .action-item input { margin: 3px 0 0; }
+    .action-item time { color: var(--text-faint); font-size: 11px; }
+    .source-banner { margin-top: 22px; padding: 11px 12px; border-radius: 9px; background: var(--muted); color: var(--text-soft); display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .source-banner .icon { width: 15px; height: 15px; }
+
+    .bottom-nav { display: none; }
+
+    .command-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      background: rgba(18, 20, 17, .25);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 92px;
+    }
+
+    .command-backdrop.open { display: flex; }
+    .command-panel { width: min(590px, calc(100% - 32px)); border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface-raised); box-shadow: var(--popover-shadow); overflow: hidden; }
+    .command-input { height: 50px; display: flex; align-items: center; gap: 9px; padding: 0 14px; border-bottom: 1px solid var(--border); }
+    .command-input input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 15px; }
+    .key { padding: 2px 6px; border: 1px solid var(--border); border-bottom-color: var(--border-strong); border-radius: 5px; color: var(--text-faint); background: var(--muted); font-size: 10px; }
+    .command-results { padding: 7px; max-height: 360px; overflow: auto; }
+    .command-group { padding: 6px 7px 4px; color: var(--text-faint); font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; }
+    .command-row { width: 100%; min-height: 42px; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 9px; text-align: left; color: var(--text); }
+    .command-row:hover, .command-row.selected { background: var(--muted); }
+    .command-icon { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center; color: var(--primary-text); background: var(--primary-soft); }
+    .command-icon .icon { width: 15px; height: 15px; }
+    .command-copy { min-width: 0; }
+    .command-copy strong { display: block; font-size: 13px; font-weight: 620; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .command-copy span { color: var(--text-faint); font-size: 11px; }
+
+    .toast { position: absolute; z-index: 30; left: 50%; bottom: 20px; transform: translate(-50%, 20px); padding: 9px 13px; border: 1px solid var(--border-strong); border-radius: 9px; background: var(--surface-raised); box-shadow: var(--popover-shadow); opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; color: var(--text-soft); font-size: 12px; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    body[data-device="tablet"] .app-layout { grid-template-columns: 64px 224px minmax(0, 1fr); }
+    body[data-device="tablet"] .outline-pane { display: none; }
+    body[data-device="tablet"] .editor-layout { grid-template-columns: minmax(0, 1fr); }
+    body[data-device="tablet"] .home-grid { grid-template-columns: 1fr; }
+    body[data-device="tablet"] .home-side { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    body[data-device="phone"] .window-titlebar { height: 38px; grid-template-columns: 1fr auto; }
+    body[data-device="phone"] .traffic-lights { display: none; }
+    body[data-device="phone"] .window-title { text-align: left; padding-left: 16px; font-weight: 630; color: var(--text); }
+    body[data-device="phone"] .app-layout { height: calc(100% - 38px); display: block; padding-bottom: 58px; }
+    body[data-device="phone"] .global-rail, body[data-device="phone"] .context-pane { display: none; }
+    body[data-device="phone"] .main-region { height: 100%; }
+    body[data-device="phone"] .content-toolbar { height: 45px; padding: 0 10px; }
+    body[data-device="phone"] .content-toolbar .sync-state span, body[data-device="phone"] .content-toolbar .default-button span { display: none; }
+    body[data-device="phone"] .outline-pane { display: none; }
+    body[data-device="phone"] .editor-layout { grid-template-columns: 1fr; }
+    body[data-device="phone"] .document { width: calc(100% - 36px); padding: 28px 0 90px; font-size: 15px; }
+    body[data-device="phone"] .document h1 { font-size: 29px; }
+    body[data-device="phone"] .page-scroll { padding: 22px 18px 80px; }
+    body[data-device="phone"] .home-grid { grid-template-columns: 1fr; gap: 26px; }
+    body[data-device="phone"] .capture-row { grid-template-columns: repeat(3, 1fr); }
+    body[data-device="phone"] .capture-button { min-height: 58px; font-size: 11px; }
+    body[data-device="phone"] .board-scroll { padding: 14px 12px 34px; scroll-snap-type: x proximity; }
+    body[data-device="phone"] .board-column { width: calc(100vw - 66px); max-width: 340px; scroll-snap-align: center; }
+    body[data-device="phone"] .calendar-header { grid-template-columns: 42px repeat(5, 96px); width: max-content; }
+    body[data-device="phone"] .calendar-grid { grid-template-columns: 42px repeat(5, 96px); width: max-content; }
+    body[data-device="phone"] .calendar-wrap { overflow-x: auto; }
+    body[data-device="phone"] .meeting-document { width: calc(100% - 36px); padding: 28px 0 90px; }
+    body[data-device="phone"] .meeting-document h1 { font-size: 26px; }
+    body[data-device="phone"] .prototype-bar { padding-left: 12px; padding-right: 12px; }
+    body[data-device="phone"] .prototype-title span { display: none; }
+    body[data-device="phone"] .segmented button { padding-left: 7px; padding-right: 7px; font-size: 11px; }
+    body[data-device="phone"] .bottom-nav { display: grid; grid-template-columns: repeat(5, 1fr); position: absolute; left: 0; right: 0; bottom: 0; z-index: 10; height: 58px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(14px); }
+    body[data-device="phone"] .bottom-button { border: 0; background: transparent; color: var(--text-faint); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 9px; }
+    body[data-device="phone"] .bottom-button .icon { width: 18px; height: 18px; }
+    body[data-device="phone"] .bottom-button[aria-selected="true"] { color: var(--primary-text); }
+
+    @media (max-width: 850px) {
+      body:not([data-device]) .app-layout { grid-template-columns: 64px 220px minmax(0, 1fr); }
+      body:not([data-device]) .outline-pane { display: none; }
+      body:not([data-device]) .editor-layout { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body data-device="desktop">
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v4h4M8 12h6M8 16h8"/></symbol>
+    <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.36.36.7.6 1 .3.29.69.43 1.1.4H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v4h4"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 4h16l2 10v6H2v-6Z"/><path d="M2 14h6l2 3h4l2-3h6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 16V3M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10Z"/><path d="m14 7 3 3"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 20-4-4L14 5a2 2 0 0 1 3 0l2 2a2 2 0 0 1 0 3L9 20Z"/><path d="m11 8 6 6M7 20h13"/></symbol>
+    <symbol id="i-lasso" viewBox="0 0 24 24"><path d="M19 8c0 3.3-3.1 6-7 6s-7-2.7-7-6 3.1-6 7-6 7 2.7 7 6Z"/><path d="M12 14c0 5-5 3-4 6 .7 2 4 1 4-1"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m3 17 5-5 4 4 3-3 6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m21 11-8 8a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 1 1-2.9-2.9l8-8"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  </svg>
+
+  <header class="prototype-bar">
+    <div class="prototype-title"><strong>NotebookOS</strong><span>Interactive interface concept · sample data only</span></div>
+    <div class="prototype-actions">
+      <div class="segmented" aria-label="Preview device">
+        <button type="button" data-device-button="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-device-button="tablet" aria-pressed="false">iPad</button>
+        <button type="button" data-device-button="phone" aria-pressed="false">iPhone</button>
+      </div>
+      <button class="icon-button" id="theme-toggle" type="button" aria-label="Toggle dark theme"><svg class="icon"><use href="#i-sun"/></svg></button>
+    </div>
+  </header>
+
+  <main class="app-frame" aria-label="NotebookOS prototype">
+    <div class="window-titlebar">
+      <div class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="window-title">Research · NotebookOS</div>
+      <div class="window-actions">
+        <button class="icon-button" type="button" data-open-command aria-label="Search and commands"><svg class="icon"><use href="#i-search"/></svg></button>
+        <button class="icon-button" type="button" aria-label="Window menu"><svg class="icon"><use href="#i-more"/></svg></button>
+      </div>
+    </div>
+
+    <div class="app-layout">
+      <nav class="global-rail" aria-label="Primary navigation">
+        <button class="workspace-mark" type="button" aria-label="Switch workspace">R</button>
+        <button class="rail-button" type="button" data-nav="home" aria-selected="false"><svg class="icon"><use href="#i-home"/></svg><span>Home</span></button>
+        <button class="rail-button" type="button" data-nav="notes" aria-selected="true"><svg class="icon"><use href="#i-note"/></svg><span>Notes</span></button>
+        <button class="rail-button" type="button" data-nav="boards" aria-selected="false"><svg class="icon"><use href="#i-board"/></svg><span>Boards</span></button>
+        <button class="rail-button" type="button" data-nav="calendar" aria-selected="false"><svg class="icon"><use href="#i-calendar"/></svg><span>Calendar</span></button>
+        <button class="rail-button" type="button" data-nav="meetings" aria-selected="false"><svg class="icon"><use href="#i-users"/></svg><span>Meetings</span></button>
+        <div class="rail-spacer"></div>
+        <button class="rail-button" type="button" data-open-command aria-selected="false"><svg class="icon"><use href="#i-search"/></svg><span>Search</span></button>
+        <button class="rail-button" type="button" aria-selected="false"><svg class="icon"><use href="#i-settings"/></svg><span>Settings</span></button>
+      </nav>
+
+      <aside class="context-pane">
+        <div class="context-header">
+          <button class="workspace-switcher" type="button">
+            <span class="workspace-dot">R</span><strong>Research</strong><svg class="icon"><use href="#i-chevron-down"/></svg>
+          </button>
+          <div class="pane-heading"><h2 id="pane-title">Notes</h2><button class="icon-button" type="button" data-create aria-label="Create new"><svg class="icon"><use href="#i-plus"/></svg></button></div>
+          <label class="context-search"><svg class="icon"><use href="#i-search"/></svg><input id="context-filter" type="search" placeholder="Filter notes" aria-label="Filter current list"></label>
+        </div>
+        <div class="context-content">
+          <div class="context-set active" data-context="notes">
+            <div class="section-label">Library</div>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-inbox"/></svg><span>Inbox</span><small>4</small></button>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-star"/></svg><span>Favorites</span></button>
+            <div class="section-label">Notebooks</div>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-chevron-down"/></svg><svg class="icon"><use href="#i-folder"/></svg><span>Research journal</span></button>
+            <button class="tree-row indent-1" type="button"><svg class="icon"><use href="#i-chevron-down"/></svg><span>Retrieval systems</span></button>
+            <button class="tree-row indent-2 selected note-choice" type="button" data-note="synthesis"><svg class="icon"><use href="#i-file"/></svg><span>Retrieval-augmented synthesis</span></button>
+            <button class="tree-row indent-2 note-choice" type="button" data-note="evaluation"><svg class="icon"><use href="#i-file"/></svg><span>Evaluation questions</span></button>
+            <button class="tree-row indent-2 note-choice" type="button" data-note="reading"><svg class="icon"><use href="#i-file"/></svg><span>Reading queue</span></button>
+            <button class="tree-row indent-1" type="button"><svg class="icon"><use href="#i-chevron-right"/></svg><span>Methods</span></button>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-chevron-right"/></svg><svg class="icon"><use href="#i-folder"/></svg><span>Idea garden</span></button>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-chevron-right"/></svg><svg class="icon"><use href="#i-folder"/></svg><span>Papers</span></button>
+            <div class="section-label">Saved</div>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-search"/></svg><span>Open questions</span><small>12</small></button>
+            <button class="tree-row" type="button"><svg class="icon"><use href="#i-trash"/></svg><span>Trash</span></button>
+          </div>
+
+          <div class="context-set" data-context="home">
+            <div class="section-label">Workspace</div>
+            <button class="list-row selected" type="button"><svg class="icon"><use href="#i-home"/></svg><span>Overview</span></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-clock"/></svg><span>Recent</span></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-inbox"/></svg><span>Inbox</span><small>4</small></button>
+            <div class="section-label">Pinned</div>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-note"/></svg><span>Research roadmap</span></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-board"/></svg><span>Research pipeline</span></button>
+          </div>
+
+          <div class="context-set" data-context="boards">
+            <div class="section-label">Native</div>
+            <button class="list-row selected" type="button"><svg class="icon"><use href="#i-board"/></svg><span>Research pipeline</span><small>11</small></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-board"/></svg><span>Ideas to explore</span><small>7</small></button>
+            <div class="section-label">Trello</div>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-external"/></svg><span>Lab operations</span><small>6</small></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-plus"/></svg><span>Connect a board…</span></button>
+          </div>
+
+          <div class="context-set" data-context="calendar">
+            <div class="section-label">Views</div>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-calendar"/></svg><span>Agenda</span></button>
+            <button class="list-row selected" type="button"><svg class="icon"><use href="#i-calendar"/></svg><span>Week</span></button>
+            <div class="section-label">Calendars</div>
+            <button class="list-row" type="button"><span style="color:#567e72">●</span><span>Research</span></button>
+            <button class="list-row" type="button"><span style="color:#9a6d3a">●</span><span>Personal</span></button>
+            <button class="list-row" type="button"><span style="color:#66789a">●</span><span>Shared lab</span></button>
+          </div>
+
+          <div class="context-set" data-context="meetings">
+            <div class="section-label">Today</div>
+            <button class="list-row meeting-row selected" type="button"><span class="meeting-date">10:30</span><span class="meeting-copy"><strong>Research sync</strong><span>4 attendees · Granola</span></span></button>
+            <button class="list-row meeting-row" type="button"><span class="meeting-date">2:00</span><span class="meeting-copy"><strong>Methods review</strong><span>6 attendees · Upcoming</span></span></button>
+            <div class="section-label">Yesterday</div>
+            <button class="list-row meeting-row" type="button"><span class="meeting-date">Tue</span><span class="meeting-copy"><strong>Advisor check-in</strong><span>2 attendees · Granola</span></span></button>
+            <button class="list-row meeting-row" type="button"><span class="meeting-date">Tue</span><span class="meeting-copy"><strong>Paper discussion</strong><span>5 attendees · Native</span></span></button>
+            <div class="section-label">Folders</div>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-folder"/></svg><span>Project Atlas</span><small>18</small></button>
+            <button class="list-row" type="button"><svg class="icon"><use href="#i-folder"/></svg><span>1:1s</span><small>9</small></button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-region">
+        <article class="view" data-view="home">
+          <div class="content-toolbar"><div class="breadcrumb"><span class="current">Home</span></div><div class="toolbar-spacer"></div><div class="sync-state"><i></i><span>Up to date</span></div></div>
+          <div class="page-scroll">
+            <div class="page-title-row"><div><h1>Good afternoon, Akshay</h1><p>Continue where you left off or capture something new.</p></div></div>
+            <div class="home-grid">
+              <div>
+                <div class="section-heading"><h2>Quick capture</h2></div>
+                <div class="capture-row">
+                  <button class="capture-button" type="button" data-create><svg class="icon"><use href="#i-note"/></svg><span>New page</span></button>
+                  <button class="capture-button" type="button" data-create><svg class="icon"><use href="#i-pen"/></svg><span>Ink note</span></button>
+                  <button class="capture-button" type="button" data-create><svg class="icon"><use href="#i-image"/></svg><span>Scan or photo</span></button>
+                </div>
+                <div class="section-heading"><h2>Continue working</h2><button type="button">See all</button></div>
+                <div class="resume-list">
+                  <div class="resume-row"><span class="resume-icon"><svg class="icon"><use href="#i-note"/></svg></span><span class="resume-copy"><strong>Retrieval-augmented synthesis</strong><span>Research journal · Retrieval systems</span></span><time>8 min</time></div>
+                  <div class="resume-row"><span class="resume-icon"><svg class="icon"><use href="#i-pen"/></svg></span><span class="resume-copy"><strong>Interface map</strong><span>Idea garden · Canvas</span></span><time>1 hr</time></div>
+                  <div class="resume-row"><span class="resume-icon"><svg class="icon"><use href="#i-users"/></svg></span><span class="resume-copy"><strong>Advisor check-in</strong><span>Meetings · Granola</span></span><time>Yesterday</time></div>
+                </div>
+              </div>
+              <aside class="home-side">
+                <div>
+                  <div class="section-heading"><h2>Today</h2><button type="button" data-nav="calendar">Calendar</button></div>
+                  <div class="agenda-list">
+                    <div class="agenda-card"><span class="agenda-time">10:30</span><span><strong>Research sync</strong><span>Granola ready · 45 min</span></span></div>
+                    <div class="agenda-card"><span class="agenda-time">2:00</span><span><strong>Methods review</strong><span>Lab room 3 · 1 hr</span></span></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="section-heading" style="margin-top:24px"><h2>Focus</h2><button type="button" data-nav="boards">Board</button></div>
+                  <div class="agenda-list">
+                    <div class="agenda-card"><span class="agenda-time">Due</span><span><strong>Define evaluation set</strong><span>Research pipeline · Today</span></span></div>
+                    <div class="agenda-card"><span class="agenda-time">Next</span><span><strong>Review sparse retrieval paper</strong><span>Reading · Friday</span></span></div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </article>
+
+        <article class="view active" data-view="notes">
+          <div class="content-toolbar">
+            <div class="breadcrumb"><span>Research journal</span><svg class="icon"><use href="#i-chevron-right"/></svg><span>Retrieval systems</span><svg class="icon"><use href="#i-chevron-right"/></svg><span class="current" id="doc-crumb">Retrieval-augmented synthesis</span></div>
+            <div class="toolbar-spacer"></div>
+            <div class="sync-state"><i></i><span>Up to date</span></div>
+            <button class="default-button" type="button" data-copy-link><svg class="icon"><use href="#i-share"/></svg><span>Share</span></button>
+            <button class="icon-button" type="button" aria-label="Page actions"><svg class="icon"><use href="#i-more"/></svg></button>
+          </div>
+          <div class="editor-layout">
+            <div class="document-scroll">
+              <article class="document">
+                <h1 id="doc-title">Retrieval-augmented synthesis</h1>
+                <div class="doc-meta"><span><svg class="icon"><use href="#i-calendar"/></svg>October 7, 2026</span><span><svg class="icon"><use href="#i-link"/></svg>6 links</span><span>research · retrieval</span></div>
+                <div id="doc-body">
+                  <p>The central question is no longer whether a system can retrieve relevant material, but whether it can preserve the <em>shape of evidence</em> while composing an answer. A useful notebook should make that provenance visible at the moment an idea is written.</p>
+                  <div class="doc-callout"><svg class="icon"><use href="#i-info"/></svg><div><strong>Working hypothesis.</strong> Synthesis quality improves when claims retain addressable links to both source passages and the intermediate notes that transformed them.</div></div>
+                  <h2>Evidence path</h2>
+                  <p>A source enters the workspace as an attachment or web reference. Highlights become stable block targets; working notes link to those targets; the final synthesis links to the working notes. Backlinks then expose where each observation influenced later work.</p>
+                  <figure class="research-figure">
+                    <svg viewBox="0 0 680 190" role="img" aria-label="Flow from source evidence through notes to synthesis">
+                      <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0 0 7 3.5 0 7Z" fill="currentColor"/></marker></defs>
+                      <g fill="none" stroke="currentColor" opacity=".25" stroke-width="1.6" marker-end="url(#arrow)"><path d="M160 55C225 55 224 70 286 70"/><path d="M160 135C225 135 224 120 286 120"/><path d="M396 70C460 70 460 95 514 95"/><path d="M396 120C460 120 460 95 514 95"/></g>
+                      <g font-family="-apple-system,Segoe UI,sans-serif" font-size="12" text-anchor="middle">
+                        <rect x="26" y="28" width="134" height="54" rx="10" fill="var(--muted)" stroke="var(--border)"/><text x="93" y="51" fill="var(--text)">Paper highlight</text><text x="93" y="67" fill="var(--text-faint)">page 14 · region 3</text>
+                        <rect x="26" y="108" width="134" height="54" rx="10" fill="var(--muted)" stroke="var(--border)"/><text x="93" y="131" fill="var(--text)">Interview excerpt</text><text x="93" y="147" fill="var(--text-faint)">meeting · 18:42</text>
+                        <rect x="286" y="43" width="110" height="54" rx="10" fill="var(--primary-soft)" stroke="var(--border)"/><text x="341" y="66" fill="var(--primary-text)">Working note</text><text x="341" y="82" fill="var(--text-faint)">claim A</text>
+                        <rect x="286" y="93" width="110" height="54" rx="10" fill="var(--primary-soft)" stroke="var(--border)"/><text x="341" y="116" fill="var(--primary-text)">Working note</text><text x="341" y="132" fill="var(--text-faint)">claim B</text>
+                        <rect x="514" y="68" width="140" height="54" rx="10" fill="var(--surface-raised)" stroke="var(--primary)"/><text x="584" y="91" fill="var(--text)">Synthesis</text><text x="584" y="107" fill="var(--text-faint)">linked argument</text>
+                      </g>
+                    </svg>
+                    <figcaption class="figure-caption">Every arrow is a durable reference that survives moving or renaming the target.</figcaption>
+                  </figure>
+                  <h2>Sketch</h2>
+                  <div class="ink-block" aria-label="Handwritten sketch block">
+                    <div class="ink-toolbar"><button class="ink-tool selected" type="button" aria-label="Pen"><svg class="icon"><use href="#i-pen"/></svg></button><button class="ink-tool" type="button" aria-label="Eraser"><svg class="icon"><use href="#i-eraser"/></svg></button><button class="ink-tool" type="button" aria-label="Lasso"><svg class="icon"><use href="#i-lasso"/></svg></button></div>
+                    <svg viewBox="0 0 680 120" fill="none" aria-hidden="true"><path d="M28 73c42-42 75-43 111-5s74 32 108-4" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/><path d="M258 62c34-27 65-29 95-4 21 17 43 21 66 11" stroke="var(--text)" stroke-width="2.7" stroke-linecap="round"/><path d="M425 68c45-38 88-39 131-3" stroke="var(--primary)" stroke-width="3" stroke-linecap="round"/><path d="m237 58 13 6-11 9M414 65l12 5-10 9" stroke="var(--text-soft)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="72" y="29" fill="var(--text-soft)" font-family="Bradley Hand,Segoe Print,cursive" font-size="18">sources</text><text x="295" y="27" fill="var(--text-soft)" font-family="Bradley Hand,Segoe Print,cursive" font-size="18">notes</text><text x="484" y="28" fill="var(--text-soft)" font-family="Bradley Hand,Segoe Print,cursive" font-size="18">argument</text><path d="M55 98c75 12 141 9 199 1 89-13 177 6 284-2" stroke="var(--warning)" stroke-width="8" stroke-linecap="round" opacity=".35"/></svg>
+                  </div>
+                  <div class="backlinks"><h3>Linked from 2 pages</h3><div class="backlink-row"><svg class="icon"><use href="#i-link"/></svg><span><strong>Evaluation questions</strong> — How do we score preservation of source context?</span></div><div class="backlink-row"><svg class="icon"><use href="#i-link"/></svg><span><strong>Research roadmap</strong> — Use the evidence-path model in the first prototype.</span></div></div>
+                </div>
+              </article>
+            </div>
+            <aside class="outline-pane">
+              <h3>On this page</h3>
+              <button class="outline-link current" type="button">Evidence path</button>
+              <button class="outline-link" type="button">Sketch</button>
+              <div class="property-list">
+                <h3>Properties</h3>
+                <dl>
+                  <div class="property"><dt>Status</dt><dd>In progress</dd></div>
+                  <div class="property"><dt>Project</dt><dd>Atlas</dd></div>
+                  <div class="property"><dt>Created</dt><dd>Sep 28</dd></div>
+                  <div class="property"><dt>Updated</dt><dd>8 min ago</dd></div>
+                </dl>
+              </div>
+            </aside>
+          </div>
+        </article>
+
+        <article class="view" data-view="boards">
+          <div class="content-toolbar"><div class="breadcrumb"><span>Boards</span><svg class="icon"><use href="#i-chevron-right"/></svg><span class="current">Research pipeline</span></div><div class="toolbar-spacer"></div><div class="sync-state"><i></i><span>Local board</span></div><button class="default-button" type="button" data-create><svg class="icon"><use href="#i-plus"/></svg><span>New card</span></button><button class="icon-button" type="button" aria-label="Board actions"><svg class="icon"><use href="#i-more"/></svg></button></div>
+          <div class="board-scroll">
+            <div class="page-title-row"><div><h1>Research pipeline</h1><p>Reading, experiments, and writing linked to the research journal.</p></div></div>
+            <div class="board-columns">
+              <section class="board-column" data-column="inbox"><div class="column-header"><strong>Inbox</strong><span class="count">3</span><button class="icon-button" type="button" aria-label="Inbox column actions"><svg class="icon"><use href="#i-more"/></svg></button></div><div class="card-stack">
+                <article class="kanban-card" draggable="true"><div class="card-labels"><span class="card-label research">Question</span></div><h3>Can provenance remain legible after synthesis?</h3><div class="card-meta"><span><svg class="icon"><use href="#i-link"/></svg>2 notes</span></div></article>
+                <article class="kanban-card" draggable="true"><div class="card-source"><svg class="icon"><use href="#i-external"/></svg>Trello mirror</div><h3>Collect baseline retrieval papers</h3><div class="card-meta"><span><svg class="icon"><use href="#i-paperclip"/></svg>3</span><span><svg class="icon"><use href="#i-clock"/></svg>Fri</span></div></article>
+                <article class="kanban-card" draggable="true"><h3>Sketch mobile capture flow</h3><div class="card-meta"><span><svg class="icon"><use href="#i-link"/></svg>Canvas</span></div></article>
+              </div><button class="add-card" type="button" data-create>+ Add card</button></section>
+
+              <section class="board-column" data-column="reading"><div class="column-header"><strong>Reading</strong><span class="count">2</span><button class="icon-button" type="button" aria-label="Reading column actions"><svg class="icon"><use href="#i-more"/></svg></button></div><div class="card-stack">
+                <article class="kanban-card" draggable="true"><div class="card-labels"><span class="card-label">Paper</span></div><h3>Review sparse retrieval survey</h3><div class="card-meta"><span><svg class="icon"><use href="#i-paperclip"/></svg>PDF</span><span><svg class="icon"><use href="#i-clock"/></svg>Today</span></div></article>
+                <article class="kanban-card" draggable="true"><div class="card-labels"><span class="card-label">Notes</span></div><h3>Compare citation graph approaches</h3><div class="card-meta"><span><svg class="icon"><use href="#i-link"/></svg>4 notes</span></div></article>
+              </div><button class="add-card" type="button" data-create>+ Add card</button></section>
+
+              <section class="board-column" data-column="experiment"><div class="column-header"><strong>Experiment</strong><span class="count">2</span><button class="icon-button" type="button" aria-label="Experiment column actions"><svg class="icon"><use href="#i-more"/></svg></button></div><div class="card-stack">
+                <article class="kanban-card" draggable="true"><div class="card-labels"><span class="card-label research">Active</span></div><h3>Define evidence-preservation evaluation set</h3><div class="card-meta"><span><svg class="icon"><use href="#i-clock"/></svg>Today</span><span><svg class="icon"><use href="#i-message"/></svg>2</span></div></article>
+                <article class="kanban-card" draggable="true"><h3>Prototype block-level citation capture</h3><div class="card-meta"><span><svg class="icon"><use href="#i-link"/></svg>Spec</span></div></article>
+              </div><button class="add-card" type="button" data-create>+ Add card</button></section>
+
+              <section class="board-column" data-column="writing"><div class="column-header"><strong>Writing</strong><span class="count">1</span><button class="icon-button" type="button" aria-label="Writing column actions"><svg class="icon"><use href="#i-more"/></svg></button></div><div class="card-stack">
+                <article class="kanban-card" draggable="true"><div class="card-labels"><span class="card-label">Draft</span></div><h3>Write methods section outline</h3><div class="card-meta"><span><svg class="icon"><use href="#i-link"/></svg>Outline</span><span><svg class="icon"><use href="#i-clock"/></svg>Oct 12</span></div></article>
+              </div><button class="add-card" type="button" data-create>+ Add card</button></section>
+
+              <section class="board-column" data-column="done"><div class="column-header"><strong>Done</strong><span class="count">3</span><button class="icon-button" type="button" aria-label="Done column actions"><svg class="icon"><use href="#i-more"/></svg></button></div><div class="card-stack">
+                <article class="kanban-card" draggable="true"><h3>Set research questions</h3><div class="card-meta"><span><svg class="icon"><use href="#i-check"/></svg>Oct 4</span></div></article>
+                <article class="kanban-card" draggable="true"><h3>Create literature notebook</h3><div class="card-meta"><span><svg class="icon"><use href="#i-check"/></svg>Sep 30</span></div></article>
+              </div><button class="add-card" type="button" data-create>+ Add card</button></section>
+            </div>
+          </div>
+        </article>
+
+        <article class="view" data-view="calendar">
+          <div class="content-toolbar"><button class="quiet-button" type="button">Today</button><button class="icon-button" type="button" aria-label="Previous week"><svg class="icon" style="transform:rotate(180deg)"><use href="#i-chevron-right"/></svg></button><button class="icon-button" type="button" aria-label="Next week"><svg class="icon"><use href="#i-chevron-right"/></svg></button><strong style="margin-left:5px">October 5–9, 2026</strong><div class="toolbar-spacer"></div><button class="default-button" type="button" data-create><svg class="icon"><use href="#i-plus"/></svg><span>New event</span></button></div>
+          <div class="calendar-wrap">
+            <div class="calendar-header"><div></div><div class="day-heading"><span>MON</span><strong>5</strong></div><div class="day-heading"><span>TUE</span><strong>6</strong></div><div class="day-heading today"><span>WED</span><strong>7</strong></div><div class="day-heading"><span>THU</span><strong>8</strong></div><div class="day-heading"><span>FRI</span><strong>9</strong></div></div>
+            <div class="calendar-grid">
+              <div class="time-cell" style="grid-row:1">8 AM</div><div class="time-cell" style="grid-row:2">9 AM</div><div class="time-cell" style="grid-row:3">10 AM</div><div class="time-cell" style="grid-row:4">11 AM</div><div class="time-cell" style="grid-row:5">12 PM</div><div class="time-cell" style="grid-row:6">1 PM</div><div class="time-cell" style="grid-row:7">2 PM</div><div class="time-cell" style="grid-row:8">3 PM</div><div class="time-cell" style="grid-row:9">4 PM</div><div class="time-cell" style="grid-row:10">5 PM</div>
+              <div class="day-column" style="grid-column:2"></div><div class="day-column" style="grid-column:3"></div><div class="day-column" style="grid-column:4"></div><div class="day-column" style="grid-column:5"></div><div class="day-column" style="grid-column:6"></div>
+              <div class="calendar-event" style="grid-column:2;grid-row:2 / span 2"><strong>Deep work</strong>Literature review</div>
+              <div class="calendar-event warning" style="grid-column:3;grid-row:4 / span 2"><strong>Advisor check-in</strong>Granola connected</div>
+              <div class="calendar-event" style="grid-column:4;grid-row:3 / span 2"><strong>Research sync</strong>10:30 · 4 people</div>
+              <div class="calendar-event warning" style="grid-column:4;grid-row:7 / span 2"><strong>Methods review</strong>2:00 · Lab room 3</div>
+              <div class="calendar-event" style="grid-column:5;grid-row:2 / span 3"><strong>Writing block</strong>Methods outline</div>
+              <div class="calendar-event" style="grid-column:6;grid-row:5 / span 2"><strong>Paper discussion</strong>12:00 · Shared lab</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="view" data-view="meetings">
+          <div class="content-toolbar"><div class="breadcrumb"><span>Meetings</span><svg class="icon"><use href="#i-chevron-right"/></svg><span class="current">Research sync</span></div><div class="toolbar-spacer"></div><div class="sync-state"><i></i><span>Imported from Granola</span></div><button class="default-button" type="button" data-copy-link><svg class="icon"><use href="#i-link"/></svg><span>Copy link</span></button></div>
+          <div class="meeting-layout">
+            <article class="meeting-document">
+              <div class="meeting-kicker">TODAY · 10:30–11:15 AM</div>
+              <h1>Research sync</h1>
+              <p class="meeting-summary">The team aligned on the first evaluation set, narrowed the mobile prototype to capture and reading, and assigned the remaining source-import work.</p>
+              <div class="attendees" aria-label="Four attendees"><span class="avatar">AA</span><span class="avatar">MK</span><span class="avatar">SL</span><span class="avatar">JR</span></div>
+              <section class="meeting-section"><h2>Decisions</h2><div class="decision"><svg class="icon"><use href="#i-check"/></svg><span>Use claim-to-source traceability as the first evaluation dimension.</span></div><div class="decision"><svg class="icon"><use href="#i-check"/></svg><span>Keep the first iPhone prototype focused on capture, search, and reading.</span></div><div class="decision"><svg class="icon"><use href="#i-check"/></svg><span>Test Granola import with a dedicated Meetings folder before enabling automatic sync.</span></div></section>
+              <section class="meeting-section"><h2>Action items</h2><label class="action-item"><input type="checkbox"><span>Draft ten evidence-preservation test cases</span><time>Akshay · Fri</time></label><label class="action-item"><input type="checkbox"><span>Collect three representative Granola notes for the import fixture</span><time>Maya · Thu</time></label><label class="action-item"><input type="checkbox" checked><span>Link the evaluation page to the research board</span><time>Sam · Done</time></label></section>
+              <section class="meeting-section"><h2>Your notes</h2><p style="color:var(--text-soft)">The source hierarchy could double as an explanation surface: show a small evidence path beside a generated paragraph, then let the reader open each hop without losing their place.</p></section>
+              <div class="source-banner"><svg class="icon"><use href="#i-external"/></svg><span>Summary and decisions synced from Granola at 11:18 AM. Your notes stay private in NotebookOS.</span><button class="quiet-button" type="button" style="margin-left:auto">View source</button></div>
+            </article>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <nav class="bottom-nav" aria-label="Mobile navigation">
+      <button class="bottom-button" type="button" data-nav="home" aria-selected="false"><svg class="icon"><use href="#i-home"/></svg><span>Home</span></button>
+      <button class="bottom-button" type="button" data-nav="notes" aria-selected="true"><svg class="icon"><use href="#i-note"/></svg><span>Notes</span></button>
+      <button class="bottom-button" type="button" data-nav="boards" aria-selected="false"><svg class="icon"><use href="#i-board"/></svg><span>Boards</span></button>
+      <button class="bottom-button" type="button" data-nav="calendar" aria-selected="false"><svg class="icon"><use href="#i-calendar"/></svg><span>Calendar</span></button>
+      <button class="bottom-button" type="button" data-nav="meetings" aria-selected="false"><svg class="icon"><use href="#i-users"/></svg><span>Meetings</span></button>
+    </nav>
+
+    <div class="command-backdrop" id="command-backdrop" role="dialog" aria-modal="true" aria-label="Search and commands">
+      <div class="command-panel">
+        <div class="command-input"><svg class="icon"><use href="#i-search"/></svg><input id="command-query" type="text" placeholder="Search pages, meetings, cards, or run a command"><span class="key">Esc</span></div>
+        <div class="command-results">
+          <div class="command-group">Continue</div>
+          <button class="command-row selected" type="button" data-result="notes"><span class="command-icon"><svg class="icon"><use href="#i-note"/></svg></span><span class="command-copy"><strong>Retrieval-augmented synthesis</strong><span>Research journal · Edited 8 min ago</span></span><span class="key">↵</span></button>
+          <button class="command-row" type="button" data-result="meetings"><span class="command-icon"><svg class="icon"><use href="#i-users"/></svg></span><span class="command-copy"><strong>Research sync</strong><span>Meeting · Today at 10:30</span></span></button>
+          <div class="command-group">Commands</div>
+          <button class="command-row" type="button" data-command-action="new-page"><span class="command-icon"><svg class="icon"><use href="#i-plus"/></svg></span><span class="command-copy"><strong>New page</strong><span>Create in the current section</span></span><span class="key">⌘N</span></button>
+          <button class="command-row" type="button" data-command-action="new-ink"><span class="command-icon"><svg class="icon"><use href="#i-pen"/></svg></span><span class="command-copy"><strong>New handwritten note</strong><span>Create a canvas in Inbox</span></span></button>
+          <button class="command-row" type="button" data-command-action="copy-link"><span class="command-icon"><svg class="icon"><use href="#i-link"/></svg></span><span class="command-copy"><strong>Copy link to current page</strong><span>Stable even after moves or renames</span></span></button>
+        </div>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite">Link copied</div>
+  </main>
+
+  <script>
+    const body = document.body;
+    const root = document.documentElement;
+    const paneTitle = document.getElementById('pane-title');
+    const contextFilter = document.getElementById('context-filter');
+    const commandBackdrop = document.getElementById('command-backdrop');
+    const commandQuery = document.getElementById('command-query');
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    const previewParams = new URLSearchParams(location.search);
+    const requestedDevice = previewParams.get('device');
+    const requestedTheme = previewParams.get('theme');
+    if (['desktop', 'tablet', 'phone'].includes(requestedDevice)) {
+      body.dataset.device = requestedDevice;
+      document.querySelectorAll('[data-device-button]').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.deviceButton === requestedDevice)));
+    }
+    if (['light', 'dark'].includes(requestedTheme)) root.dataset.theme = requestedTheme;
+
+    const viewLabels = { home: 'Home', notes: 'Notes', boards: 'Boards', calendar: 'Calendar', meetings: 'Meetings' };
+    const filterLabels = { home: 'Filter workspace', notes: 'Filter notes', boards: 'Filter boards', calendar: 'Filter calendars', meetings: 'Filter meetings' };
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function switchView(view) {
+      document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+      document.querySelectorAll('.context-set').forEach(el => el.classList.toggle('active', el.dataset.context === view));
+      document.querySelectorAll('[data-nav]').forEach(el => el.setAttribute('aria-selected', String(el.dataset.nav === view)));
+      paneTitle.textContent = viewLabels[view];
+      contextFilter.placeholder = filterLabels[view];
+      contextFilter.value = '';
+      filterContext('');
+    }
+
+    document.querySelectorAll('[data-nav]').forEach(button => button.addEventListener('click', () => switchView(button.dataset.nav)));
+
+    document.querySelectorAll('[data-device-button]').forEach(button => {
+      button.addEventListener('click', () => {
+        body.dataset.device = button.dataset.deviceButton;
+        document.querySelectorAll('[data-device-button]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      });
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    });
+
+    function openCommand() {
+      commandBackdrop.classList.add('open');
+      commandQuery.value = '';
+      setTimeout(() => commandQuery.focus(), 0);
+    }
+
+    function closeCommand() { commandBackdrop.classList.remove('open'); }
+    document.querySelectorAll('[data-open-command]').forEach(button => button.addEventListener('click', openCommand));
+    commandBackdrop.addEventListener('click', event => { if (event.target === commandBackdrop) closeCommand(); });
+
+    document.addEventListener('keydown', event => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openCommand(); }
+      if (event.key === 'Escape') closeCommand();
+    });
+
+    commandQuery.addEventListener('input', () => {
+      const query = commandQuery.value.trim().toLowerCase();
+      document.querySelectorAll('.command-row').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? 'grid' : 'none'; });
+    });
+
+    document.querySelectorAll('[data-result]').forEach(button => button.addEventListener('click', () => { switchView(button.dataset.result); closeCommand(); }));
+    document.querySelectorAll('[data-command-action]').forEach(button => button.addEventListener('click', () => { closeCommand(); showToast(button.querySelector('strong').textContent + ' — prototype action'); }));
+    document.querySelectorAll('[data-create]').forEach(button => button.addEventListener('click', () => showToast('Create menu — prototype action')));
+    document.querySelectorAll('[data-copy-link]').forEach(button => button.addEventListener('click', () => showToast('Stable link copied')));
+
+    function filterContext(query) {
+      const active = document.querySelector('.context-set.active');
+      if (!active) return;
+      active.querySelectorAll('.tree-row, .list-row').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query.toLowerCase()) ? 'flex' : 'none'; });
+    }
+
+    contextFilter.addEventListener('input', () => filterContext(contextFilter.value));
+
+    const noteContent = {
+      synthesis: { title: 'Retrieval-augmented synthesis', intro: 'The central question is no longer whether a system can retrieve relevant material, but whether it can preserve the shape of evidence while composing an answer. A useful notebook should make that provenance visible at the moment an idea is written.' },
+      evaluation: { title: 'Evaluation questions', intro: 'What would it mean to measure whether a synthesis preserves the shape, uncertainty, and provenance of its evidence?' },
+      reading: { title: 'Reading queue', intro: 'Papers and source material to review for the retrieval and traceability study.' }
+    };
+
+    document.querySelectorAll('.note-choice').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('.note-choice').forEach(item => item.classList.toggle('selected', item === button));
+      const note = noteContent[button.dataset.note];
+      document.getElementById('doc-title').textContent = note.title;
+      document.getElementById('doc-crumb').textContent = note.title;
+      if (note.intro) document.querySelector('#doc-body > p').textContent = note.intro;
+    }));
+
+    document.querySelectorAll('.ink-tool').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('.ink-tool').forEach(item => item.classList.toggle('selected', item === button));
+    }));
+
+    let draggedCard = null;
+    document.querySelectorAll('.kanban-card').forEach(card => {
+      card.addEventListener('dragstart', () => { draggedCard = card; card.classList.add('dragging'); });
+      card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggedCard = null; document.querySelectorAll('.board-column').forEach(column => column.classList.remove('drag-over')); });
+    });
+    document.querySelectorAll('.board-column').forEach(column => {
+      column.addEventListener('dragover', event => { event.preventDefault(); column.classList.add('drag-over'); });
+      column.addEventListener('dragleave', () => column.classList.remove('drag-over'));
+      column.addEventListener('drop', event => {
+        event.preventDefault();
+        column.classList.remove('drag-over');
+        if (draggedCard) { column.querySelector('.card-stack').appendChild(draggedCard); showToast('Card moved'); }
+      });
+    });
+  </script>
+</body>
+</html>
