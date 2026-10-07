@@ -90,7 +90,7 @@ Home is a resumption surface rather than a metrics dashboard. It should favor re
 
 ## 6. Page and editor model
 
-NotebookOS supports two page layouts that share the same block types and link system.
+NotebookOS supports three page types that share the same identity, linking, search, history, and sync system.
 
 ### Document page
 
@@ -116,6 +116,21 @@ A zoomable spatial surface for handwriting, diagrams, brainstorming, image annot
 
 The canvas has a finite content extent that expands as objects move. It should feel open-ended without relying on unbounded coordinates that harm export, search previews, or performance.
 
+### Handwritten page
+
+A paper-first page whose entire content surface is handwriting. This is the direct path for opening a research journal on iPad and writing with Apple Pencil without creating or selecting an ink block.
+
+- New page offers `Document`, `Handwritten page`, and `Canvas` as distinct choices.
+- The default surface is a clean white sheet. Optional paper styles are ruled, grid, dot grid, and plain dark paper.
+- The page opens directly into drawing mode on iPad. Pen, highlighter, eraser, lasso, ruler, shapes, color, stroke width, undo, and redo remain immediately reachable.
+- The title and page metadata live in lightweight chrome outside the paper, leaving the sheet itself uninterrupted.
+- Pan and zoom use touch while Apple Pencil writes. Finger drawing remains an explicit setting.
+- Strokes remain editable vector data and use the same shared ink model as document ink blocks and Canvas pages.
+- A handwritten page can be exported as PDF, vector ink, or a flattened image. The white paper background is included by default in PDF and image exports.
+- Handwriting recognition can index text for search without replacing or altering the original strokes.
+- Lassoed ink can be copied into a document ink block or onto a Canvas page. An entire handwritten page can also be embedded as a readonly preview in another page.
+- The first release uses one continuously scrollable sheet per handwritten page. Explicit multi-sheet stacks and page-size templates can follow after physical-device testing.
+
 ### Editing behavior
 
 - Slash command inserts a block; keyboard shortcuts cover common formatting.
@@ -136,6 +151,7 @@ The canvas has a finite content extent that expands as objects move. It should f
 - Ink remains editable vector data. Exports may also include a flattened representation.
 - Searchable handwriting uses optional on-device OCR/indexing; original strokes remain authoritative.
 - On iPad and iPhone, a native PencilKit surface is the preferred capture bridge until GPUI mobile input is proven equivalent on physical devices.
+- PencilKit occupies the full paper surface for a Handwritten page rather than appearing inside document block chrome.
 - Desktop uses the shared stroke model through a GPUI custom element and accepts mouse, trackpad, stylus, and tablet input according to platform capability.
 
 ### Images, files, and PDFs
@@ -276,6 +292,7 @@ System-wide capture on Apple platforms should include a Share extension, Shortcu
 ### iPadOS
 
 - Primary Apple Pencil experience.
+- Handwritten pages open as a focused full-sheet PencilKit surface with minimal surrounding chrome.
 - Sidebar plus detail layout in regular width; focused full-screen editor in compact width or Stage Manager constraints.
 - Native host owns scene lifecycle, safe areas, keyboard avoidance, document picker, PencilKit, share sheets, and system extensions.
 - GPUI Kit hosts validated content and workspace surfaces; unsupported interactions receive a native bridge or platform-specific presentation.
@@ -424,7 +441,7 @@ Crates are introduced when their capability has a stable state and lifecycle; th
 
 ### Phase 3 — canvas and ink
 
-- Shared ink model, GPUI desktop renderer, canvas page, selection, tools, image/PDF annotation.
+- Shared ink model, GPUI desktop renderer, full-sheet Handwritten page, canvas page, selection, tools, and image/PDF annotation.
 - Apple mobile host, PencilKit bridge, device input validation, and iPad-focused layout.
 
 ### Phase 4 — encrypted multi-device sync and Apple extensions
@@ -456,10 +473,11 @@ The first public release is ready when a user can:
 2. Write, format, link, search, export, and recover notes fully offline.
 3. Add and annotate images and files.
 4. Draw with low perceived latency and retain editable vector strokes.
-5. Sync supported first-party content across at least macOS, iPadOS, and iOS without silent data loss.
-6. Navigate core workflows with keyboard, pointer, and touch, with visible focus and accessible names.
-7. Understand local save, remote sync, connector provenance, readonly, failure, and conflict states.
-8. Restore from Trash and export a complete workspace independently of the service.
+5. Create a full-sheet Handwritten page on iPad and export it without document-block chrome.
+6. Sync supported first-party content across at least macOS, iPadOS, and iOS without silent data loss.
+7. Navigate core workflows with keyboard, pointer, and touch, with visible focus and accessible names.
+8. Understand local save, remote sync, connector provenance, readonly, failure, and conflict states.
+9. Restore from Trash and export a complete workspace independently of the service.
 
 Boards, calendar, and Granola can ship in subsequent minor releases if delaying them protects note reliability, ink quality, or data portability.
 
